@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/dmitriyomelyusik/debts/backend/domain"
 )
@@ -74,17 +75,19 @@ func (db DB) GetUsers() ([]domain.User, error) {
 
 // AddDebt adds debt into database
 func (db DB) AddDebt(debt domain.Debt) (domain.Debt, error) {
+	date := time.Time(*debt.Date)
 	res, err := db.db.Exec("INSERT INTO debts (creditor, debtor, sum, date) VALUES (?, ?, ?, ?)", debt.Creditor.ID,
-		debt.Debtor.ID, debt.Sum, debt.Date)
+		debt.Debtor.ID, debt.Sum, date)
 	id, _ := res.LastInsertId()
 	debt.ID = int(id)
 	return debt, err
 }
 
 // UpdateDebt updates debt
-func (db DB) UpdateDebt(debt domain.Debt) error {
-	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=? WHERE id=?", debt.Sum, debt.Date, debt.Creditor,
-		debt.Debtor, debt.ID)
+func (db DB) UpdateDebt(id int, debt domain.Debt) error {
+	date := time.Time(*debt.Date)
+	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=? WHERE id=?", debt.Sum, date, debt.Creditor,
+		debt.Debtor, id)
 	return err
 }
 
@@ -99,8 +102,24 @@ func (db DB) DeleteDebt(id int) error {
 
 // GetDebt returns debt by id
 func (db DB) GetDebt(id int) (domain.Debt, error) {
-	var debt domain.Debt
-	err := db.db.QueryRow("SELECT FROM debts WHERE id=?", id).Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, &debt.Date)
+	var (
+		debt domain.Debt
+		date time.Time
+	)
+	query := "SELECT FROM debts WHERE id=?"
+	err := db.db.QueryRow(query, id).Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, date)
+	if err != nil {
+		return debt, err
+	}
+	d := domain.Time(date)
+	debt.Date = &d
+
+	debt.Creditor, err = db.GetUser(debt.Creditor.ID)
+	if err != nil {
+		return debt, err
+	}
+
+	debt.Debtor, err = db.GetUser(debt.Debtor.ID)
 	return debt, err
 }
 
@@ -112,8 +131,23 @@ func (db DB) GetDebts() ([]domain.Debt, error) {
 	}
 	debts := make([]domain.Debt, 0)
 	for rows.Next() {
-		var debt domain.Debt
-		err = rows.Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, &debt.Date)
+		var (
+			debt domain.Debt
+			date time.Time
+		)
+		err = rows.Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, date)
+		if err != nil {
+			return debts, err
+		}
+		d := domain.Time(date)
+		debt.Date = &d
+
+		debt.Creditor, err = db.GetUser(debt.Creditor.ID)
+		if err != nil {
+			return debts, err
+		}
+
+		debt.Debtor, err = db.GetUser(debt.Debtor.ID)
 		if err != nil {
 			return debts, err
 		}
