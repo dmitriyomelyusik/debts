@@ -42,5 +42,6 @@ type Debt struct {
 	Creditor User    `json:"creditor,omitempty"`
 	Debtor   User    `json:"debtor,omitempty"`
 	Sum      float64 `json:"sum,omitempty"`
+	Reason   string  `json:"reason,omitempty"`
 	Date     *Time   `json:"date,omitempty"`
 }

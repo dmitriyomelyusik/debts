@@ -76,8 +76,8 @@ func (db DB) GetUsers() ([]domain.User, error) {
 // AddDebt adds debt into database
 func (db DB) AddDebt(debt domain.Debt) (domain.Debt, error) {
 	date := time.Time(*debt.Date)
-	res, err := db.db.Exec("INSERT INTO debts (creditor, debtor, sum, date) VALUES (?, ?, ?, ?)", debt.Creditor.ID,
-		debt.Debtor.ID, debt.Sum, date)
+	res, err := db.db.Exec("INSERT INTO debts (creditor, debtor, sum, reason, date) VALUES (?, ?, ?, ?, ?)", debt.Creditor.ID,
+		debt.Debtor.ID, debt.Sum, debt.Reason, date)
 	id, _ := res.LastInsertId()
 	debt.ID = int(id)
 	return debt, err
@@ -86,8 +86,8 @@ func (db DB) AddDebt(debt domain.Debt) (domain.Debt, error) {
 // UpdateDebt updates debt
 func (db DB) UpdateDebt(id int, debt domain.Debt) error {
 	date := time.Time(*debt.Date)
-	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=? WHERE id=?", debt.Sum, date, debt.Creditor,
-		debt.Debtor, id)
+	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=?, reason=? WHERE id=?", debt.Sum, date, debt.Creditor,
+		debt.Debtor, debt.Reason, id)
 	return err
 }
 
@@ -107,7 +107,7 @@ func (db DB) GetDebt(id int) (domain.Debt, error) {
 		date time.Time
 	)
 	query := "SELECT * FROM debts WHERE id=?"
-	err := db.db.QueryRow(query, id).Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, date)
+	err := db.db.QueryRow(query, id).Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, &debt.Reason, date)
 	if err != nil {
 		return debt, err
 	}
@@ -135,7 +135,7 @@ func (db DB) GetDebts() ([]domain.Debt, error) {
 			debt domain.Debt
 			date time.Time
 		)
-		err = rows.Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, date)
+		err = rows.Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, &debt.Reason, date)
 		if err != nil {
 			return debts, err
 		}

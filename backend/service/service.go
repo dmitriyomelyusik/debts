@@ -51,8 +51,8 @@ func (s Service) GetUsers() ([]domain.User, error) {
 
 // AddDebt adds debt
 func (s Service) AddDebt(debt domain.Debt) (domain.Debt, error) {
-	if debt.Date == nil {
-		return domain.Debt{}, errors.New("date can't be nil")
+	if debt.Date == nil || debt.Reason == "" {
+		return domain.Debt{}, errors.New("date and reason can't be nil")
 	}
 	if _, err := s.GetUser(debt.Creditor.ID); err != nil {
 		return domain.Debt{}, err
