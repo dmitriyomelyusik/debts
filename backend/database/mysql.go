@@ -41,7 +41,7 @@ func (db DB) UpdateUser(id int, user domain.User) error {
 
 // DeleteUser deletes user
 func (db DB) DeleteUser(id int) error {
-	_, err := db.db.Exec("DELETE users WHERE id=?", id)
+	_, err := db.db.Exec("DELETE FROM users WHERE id=?", id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -78,6 +78,9 @@ func (db DB) AddDebt(debt domain.Debt) (domain.Debt, error) {
 	date := time.Time(*debt.Date)
 	res, err := db.db.Exec("INSERT INTO debts (creditor, debtor, sum, reason, date) VALUES (?, ?, ?, ?, ?)", debt.Creditor.ID,
 		debt.Debtor.ID, debt.Sum, debt.Reason, date)
+	if err != nil {
+		return debt, err
+	}
 	id, _ := res.LastInsertId()
 	debt.ID = int(id)
 	return debt, err
@@ -93,7 +96,7 @@ func (db DB) UpdateDebt(id int, debt domain.Debt) error {
 
 // DeleteDebt deletes debt
 func (db DB) DeleteDebt(id int) error {
-	_, err := db.db.Exec("DELETE debts WHERE id=?", id)
+	_, err := db.db.Exec("DELETE FROM debts WHERE id=?", id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}

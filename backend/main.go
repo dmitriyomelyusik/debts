@@ -17,7 +17,7 @@ func main() {
 	ctrl := rest.NewController(&service)
 	router := rest.NewRouter(&ctrl)
 	server := http.Server{
-		Addr:         "localhost:8080",
+		Addr:         "0.0.0.0:1234",
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 		Handler:      router,
