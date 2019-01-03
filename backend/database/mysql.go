@@ -51,7 +51,7 @@ func (db DB) DeleteUser(id int) error {
 // GetUser returns user by id
 func (db DB) GetUser(id int) (domain.User, error) {
 	var user domain.User
-	err := db.db.QueryRow("SELECT FROM users WHERE id=?", id).Scan(&user.ID, &user.Name)
+	err := db.db.QueryRow("SELECT * FROM users WHERE id=?", id).Scan(&user.ID, &user.Name)
 	return user, err
 }
 
@@ -106,7 +106,7 @@ func (db DB) GetDebt(id int) (domain.Debt, error) {
 		debt domain.Debt
 		date time.Time
 	)
-	query := "SELECT FROM debts WHERE id=?"
+	query := "SELECT * FROM debts WHERE id=?"
 	err := db.db.QueryRow(query, id).Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, date)
 	if err != nil {
 		return debt, err

@@ -22,6 +22,14 @@ type Controller struct {
 	service *service.Service
 }
 
+// NewController bla-bla
+func NewController(service *service.Service) Controller {
+	if service == nil {
+		log.Fatal("service can't be nil")
+	}
+	return Controller{service: service}
+}
+
 func (c Controller) addUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	data, err := ioutil.ReadAll(r.Body)
@@ -245,5 +253,7 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(response)
-	log.Print(err)
+	if err != nil {
+		log.Print(err)
+	}
 }
