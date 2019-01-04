@@ -182,7 +182,7 @@ func (c Controller) deleteDebt(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusOK, err.Error())
 		return
 	}
-	err = c.service.DeleteUser(id)
+	err = c.service.DeleteDebt(id)
 	if err != nil {
 		respondWithError(w, http.StatusOK, err.Error())
 		return

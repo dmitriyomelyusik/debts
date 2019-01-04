@@ -45,6 +45,10 @@ func (db DB) DeleteUser(id int) error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
+	_, err = db.db.Exec("DELETE FROM debts WHERE creditor=? OR debtor=?", id, id)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
 	return nil
 }
 
@@ -89,15 +93,15 @@ func (db DB) AddDebt(debt domain.Debt) (domain.Debt, error) {
 // UpdateDebt updates debt
 func (db DB) UpdateDebt(id int, debt domain.Debt) error {
 	date := time.Time(*debt.Date)
-	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=?, reason=? WHERE id=?", debt.Sum, date, debt.Creditor,
-		debt.Debtor, debt.Reason, id)
+	_, err := db.db.Exec("UPDATE debts SET sum=?, date=?, creditor=?, debtor=?, reason=? WHERE id=?", debt.Sum, date, debt.Creditor.ID,
+		debt.Debtor.ID, debt.Reason, id)
 	return err
 }
 
 // DeleteDebt deletes debt
 func (db DB) DeleteDebt(id int) error {
 	_, err := db.db.Exec("DELETE FROM debts WHERE id=?", id)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return err
 	}
 	return nil
@@ -106,23 +110,27 @@ func (db DB) DeleteDebt(id int) error {
 // GetDebt returns debt by id
 func (db DB) GetDebt(id int) (domain.Debt, error) {
 	var (
-		debt domain.Debt
-		date time.Time
+		debt       domain.Debt
+		date       time.Time
+		creditorID int
+		debtorID   int
 	)
 	query := "SELECT * FROM debts WHERE id=?"
-	err := db.db.QueryRow(query, id).Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, &debt.Reason, date)
-	if err != nil {
+	err := db.db.QueryRow(query, id).Scan(&debt.ID, &creditorID, &debtorID, &debt.Sum, &debt.Reason, &date)
+	if err != nil && err != sql.ErrNoRows {
 		return debt, err
+	}
+	if err == sql.ErrNoRows {
+		return domain.Debt{}, nil
 	}
 	d := domain.Time(date)
 	debt.Date = &d
-
-	debt.Creditor, err = db.GetUser(debt.Creditor.ID)
+	debt.Creditor, err = db.GetUser(creditorID)
 	if err != nil {
 		return debt, err
 	}
 
-	debt.Debtor, err = db.GetUser(debt.Debtor.ID)
+	debt.Debtor, err = db.GetUser(debtorID)
 	return debt, err
 }
 
@@ -138,7 +146,7 @@ func (db DB) GetDebts() ([]domain.Debt, error) {
 			debt domain.Debt
 			date time.Time
 		)
-		err = rows.Scan(&debt.ID, &debt.Creditor, &debt.Debtor, &debt.Sum, &debt.Reason, date)
+		err = rows.Scan(&debt.ID, &debt.Creditor.ID, &debt.Debtor.ID, &debt.Sum, &debt.Reason, &date)
 		if err != nil {
 			return debts, err
 		}
@@ -146,11 +154,17 @@ func (db DB) GetDebts() ([]domain.Debt, error) {
 		debt.Date = &d
 
 		debt.Creditor, err = db.GetUser(debt.Creditor.ID)
+		if err == sql.ErrNoRows {
+			continue
+		}
 		if err != nil {
 			return debts, err
 		}
 
 		debt.Debtor, err = db.GetUser(debt.Debtor.ID)
+		if err == sql.ErrNoRows {
+			continue
+		}
 		if err != nil {
 			return debts, err
 		}
